@@ -1,0 +1,26 @@
+[
+    {
+        "name": "Otto",
+        "pictureUrl": "https://placekitten.com/200/300?image=1"
+    },
+    {
+        "name": "James",
+        "pictureUrl": "https://placekitten.com/200/300?image=2"
+    },
+    {
+        "name": "Sergey",
+        "pictureUrl": "https://placekitten.com/200/300?image=3"
+    },
+    {
+        "name": "Harri",
+        "pictureUrl": "https://placekitten.com/200/300?image=4"
+    },
+    {
+        "name": "Dups",
+        "pictureUrl": "https://placekitten.com/200/300?image=5"
+    },
+    {
+        "name": "Peter",
+        "pictureUrl": "https://placekitten.com/200/300?image=6"
+    }
+]
