@@ -1,18 +1,18 @@
 from selenium.webdriver.common.by import By
 
 
-class CommonLocators(object):
+class CommonLocators:
     RESET_BUTTON = (By.XPATH, "//div/button[contains(.,'Reset')]")
 
 
-class LoginPageLocators(object):
+class LoginPageLocators:
     LOGIN_FORM = (By.XPATH, "//*[local-name() = 'form']")
     USERNAME_FIELD = (By.ID, "username")
     PASSWORD_FIELD = (By.ID, "password")
     LOGIN_BUTTON = (By.XPATH, "//button[@type='submit']")
 
 
-class KittyPageLocators(object):
+class KittyPageLocators:
     LOGOUT_BUTTON = (By.XPATH, "//button[text()='Log out']")
     CAT_NAME = (By.XPATH, "//div[@contenteditable]")
     CAT_RANK = (By.XPATH, "//div[child::span[contains(.,'Rank')]]/span[2]")
