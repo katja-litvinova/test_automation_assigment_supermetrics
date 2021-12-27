@@ -1,18 +1,22 @@
+import time
 import pytest
-from pages.pages import LoginPage as LP
+
+from pages.base_page import BasePage
+from pages.locators import LoginPageLocators, KittyPageLocators
+from pages.pages import LoginPage as LP, sum_of_ascii_symbols
 from pages.pages import KittyPage as KP
 
-admin = "admin", "adminpass"
-user = "user", "helloworld"
+ADMIN: tuple[str, str] = "admin", "adminpass"
+USER: tuple[str, str] = "user", "helloworld"
 
 
 def test_login_page(browser):
-    LP(browser).should_be_login_page()
+    BasePage(browser).wait_for_element_present(LoginPageLocators.LOGIN_FORM)
 
 
-@pytest.mark.parametrize(("username", "password"), [admin, user])
-def test_cats_info(browser, username, password):
-    expected_cat_info = [
+@pytest.mark.parametrize(("username", "password"), [ADMIN, USER])
+def test_cats_information(browser, username, password):
+    expected_cat_info: list[dict[str, str]] = [
         {"Name": "James", "Rank": "1", "Awesomeness": "∞"},
         {"Name": "Sergey", "Rank": "2", "Awesomeness": "623"},
         {"Name": "Peter", "Rank": "3", "Awesomeness": "512"},
@@ -32,26 +36,40 @@ def test_cats_info(browser, username, password):
     KP(browser).logout()
 
 
-@pytest.mark.parametrize(("username", "password"), [admin, user])
+@pytest.mark.parametrize(("username", "password"), [ADMIN, USER])
 def test_awesomeness(browser, username, password):
     LP(browser).login(username, password)
     KP(browser).reset_data()
-    KP(browser).validate_awesomeness()
+    cat_names = KP(browser).get_cat_names()
+    ascii_names = [
+        str(sum_of_ascii_symbols(cat_name)) if cat_name != "James" else "∞"
+        for cat_name in cat_names
+    ]
+    awesomeness = KP(browser).get_awesomeness()
+    assert awesomeness == ascii_names
     KP(browser).logout()
 
 
-@pytest.mark.parametrize(("username", "password"), [admin, user])
+@pytest.mark.parametrize(("username", "password"), [ADMIN, USER])
 def test_order_of_awesomeness(browser, username, password):
     LP(browser).login(username, password)
     KP(browser).reset_data()
-    KP(browser).validate_awesomeness_order()
+    actual_awesomeness = KP(browser).get_awesomeness()
+    expected_awesomeness = sorted(actual_awesomeness, reverse=True)
+    assert actual_awesomeness == expected_awesomeness
     KP(browser).logout()
 
 
 def test_delete_cat_admin(browser):
     LP(browser).login("admin", "adminpass")
+    cat_name_before_deletion = KP(browser).get_first_cat_name()
+    KP(browser).delete_cat()
+    time.sleep(0.5)
+    cat_name_after_deletion = KP(browser).get_first_cat_name()
     try:
-        KP(browser).validate_cats_deletion()
+        assert (
+            cat_name_before_deletion != cat_name_after_deletion
+        ), "The first cat has not been deleted."
     finally:
         KP(browser).reset_data()
     KP(browser).logout()
@@ -59,36 +77,46 @@ def test_delete_cat_admin(browser):
 
 def test_delete_unavailable(browser):
     LP(browser).login("user", "helloworld")
-    KP(browser).validate_cats_deletion_unavailable()
-    KP(browser).logout()
+    try:
+        BasePage(browser).is_element_not_present(*KittyPageLocators.DELETE_BUTTON)
+    finally:
+        KP(browser).logout()
 
 
-@pytest.mark.parametrize(("username", "password"), [admin, user])
+@pytest.mark.parametrize(("username", "password"), [ADMIN, USER])
 def test_rename_cat(browser, username, password):
-    new_name = "Kate"
+    new_name: str = "Kate"
     LP(browser).login(username, password)
     KP(browser).rename_cat_name(new_name)
+    KP(browser).save_cat_name()
+    names_list = KP(browser).get_cat_names()
     try:
-        KP(browser).validate_new_cat_name(new_name)
+        assert (
+            new_name in names_list
+        ), f"The new {new_name} is not presented in the page.\nCurrent cats' names:{names_list}"
     finally:
         KP(browser).reset_data()
     KP(browser).logout()
 
 
-@pytest.mark.parametrize(("username", "password"), [admin, user])
+@pytest.mark.parametrize(("username", "password"), [ADMIN, USER])
 def test_rename_cat_unavailable(browser, username, password):
     LP(browser).login(username, password)
+    current_cat_names = KP(browser).get_cat_names()
+    new_cat_name = current_cat_names[1]
+    KP(browser).rename_cat_name(new_cat_name)
     try:
-        KP(browser).validate_rename_cat_unavailable()
+        BasePage(browser).is_element_present(*KittyPageLocators.SAVE_BTN_NOT_ALLOWED)
     finally:
         KP(browser).reset_data()
     KP(browser).logout()
 
 
 def test_changes_persisted(browser):
-    new_name = "Kate"
+    new_name: str = "Kate"
     LP(browser).login("user", "helloworld")
     KP(browser).rename_cat_name(new_name)
+    KP(browser).save_cat_name()
     first_visit = KP(browser).get_whole_kitty_info()
     KP(browser).logout()
     LP(browser).login("user", "helloworld")
