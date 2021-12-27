@@ -12,7 +12,7 @@ To run it you should,
 # Instruction for using:
 
 1. Install python 3.9
-2. Install pip
+2. Install pip 21.1.2
 3. Create and activate a virtual environment
 4. Install the necessary environment requirements (libraries, modules, packages etc.):
 
@@ -20,7 +20,7 @@ To run it you should,
     pip install -r requirements.txt
     ```
 
-5. Download [Chromdriver](https://chromedriver.chromium.org/downloads), place it in venv/bin
+5. Download [Chromedriver](https://chromedriver.chromium.org/downloads), place it in venv/bin
 6. Run tests:
 
    API tests:
