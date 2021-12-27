@@ -1,49 +1,52 @@
+from typing import Optional
 import pytest
+import requests
 
-from kitties_api import *
+from kitties_api import login, get_kitties_data, rename_cat, delete_cat, reset_changes
 
-auth_admin = {"Authorization": "Bearer adminToken"}
-auth_user = {"Authorization": "Bearer userToken"}
-
-
-def test_login_missing():
-    login_data_missing = {"username": "admin", "password": ""}
-    response = login(login_data_missing)
-    assert (
-        response.status_code == 400
-    ), f"Status code is wrong, expected 400, got {response.status_code}"
-    assert "Missing username or password" in response.text
-
-
-def test_login_incorrect():
-    login_data_incorrect = {"username": "hello", "password": "there"}
-    response = login(login_data_incorrect)
-    assert (
-        response.status_code == 401
-    ), f"Status code is wrong, expected 401, got {response.status_code}"
-    assert "Incorrect username or password" in response.text
+AUTH_ADMIN: dict[str, str] = {"Authorization": "Bearer adminToken"}
+AUTH_USER: dict[str, str] = {"Authorization": "Bearer userToken"}
+LOGIN_ADMIN: dict[str, str] = {"username": "admin", "password": "adminpass"}
+LOGIN_USER: dict[str, str] = {"username": "user", "password": "helloworld"}
+PASSWORD_MISSING: dict[str, str] = {"username": "admin", "password": ""}
+ERROR_MISSING: str = "Missing username or password"
+CREDENTIALS_INCORRECT: dict[str, str] = {"username": "hello", "password": "there"}
+ERROR_INCORRECT: str = "Incorrect username or password"
+CONNECTION_ERROR: str = "Connection refused"
 
 
-def test_login_admin():
-    login_data_admin = {"username": "admin", "password": "adminpass"}
-    response = login(login_data_admin)
-    assert (
-        response.status_code == 200
-    ), f"Status code is wrong, expected 200, got {response.status_code}"
-    assert "adminToken" in response.text
+@pytest.fixture(autouse=True)
+def reset():
+    yield
+    reset_changes()
 
 
-def test_login_user():
-    login_data_user = {"username": "user", "password": "helloworld"}
-    response = login(login_data_user)
-    assert (
-        response.status_code == 200
-    ), f"Status code is wrong, expected 200, got {response.status_code}"
-    assert "userToken" in response.text
+@pytest.mark.parametrize(
+    "auth, message", [(LOGIN_ADMIN, "adminToken"), (LOGIN_USER, "userToken")]
+)
+def test_login_valid(auth, message):
+    response = login(auth)
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 200
+    assert message in response.text
+
+
+@pytest.mark.parametrize(
+    "auth, status_code, message",
+    [
+        (PASSWORD_MISSING, 400, ERROR_MISSING),
+        (CREDENTIALS_INCORRECT, 401, ERROR_INCORRECT),
+    ],
+)
+def test_login_invalid(auth, status_code, message):
+    response = login(auth)
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == status_code
+    assert message in response.text
 
 
 def test_kitties_info():
-    kitties_info = [
+    kitties_info: list[dict[str, str]] = [
         {"name": "Otto", "pictureUrl": "https://placekitten.com/200/300?image=1"},
         {"name": "James", "pictureUrl": "https://placekitten.com/200/300?image=2"},
         {"name": "Sergey", "pictureUrl": "https://placekitten.com/200/300?image=3"},
@@ -52,64 +55,43 @@ def test_kitties_info():
         {"name": "Peter", "pictureUrl": "https://placekitten.com/200/300?image=6"},
     ]
 
-    response = kitties_data(auth_admin)
-    assert (
-        response.status_code == 200
-    ), f"Status code is wrong, expected 200, got {response.status_code}"
+    response = get_kitties_data(AUTH_ADMIN)
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 200
     assert response.json() == kitties_info
 
 
-@pytest.mark.parametrize("auth", [auth_admin, auth_user])
+@pytest.mark.parametrize("auth", [AUTH_ADMIN, AUTH_USER])
 def test_rename_cat(auth):
-    data_new_name = {"newName": "Kate"}
-    response = rename_cat(auth, "Otto", data_new_name)
-    try:
-        assert (
-            response.status_code == 200
-        ), f"Status code is wrong, expected 200, got {response.status_code}"
-    finally:
-        reset_changes()
+    new_name: dict[str, str] = {"newName": "Kate"}
+    response = rename_cat(auth, "Otto", new_name)
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 200
 
 
-@pytest.mark.parametrize("auth", [auth_admin, auth_user])
-def test_rename_cat_admin_invalid(auth):
-    invalid_data_new_name = {"newName": ""}
+@pytest.mark.parametrize("auth", [AUTH_ADMIN, AUTH_USER])
+def test_rename_cat_invalid(auth):
+    invalid_data_new_name: dict[str, str] = {"newName": ""}
     response = rename_cat(auth, "Otto", invalid_data_new_name)
-    try:
-        assert (
-            response.status_code == 400
-        ), f"Status code is wrong, expected 400, got {response.status_code}"
-        assert "Required parameter 'newName' missing" in response.text
-    finally:
-        reset_changes()
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 400
+    assert "Required parameter 'newName' missing" in response.text
 
 
 def test_delete_cat_admin():
-    response = delete_cat(auth_admin, "Sergey")
-    try:
-        assert (
-            response.status_code == 200
-        ), f"Status code is wrong, expected 200, got {response.status_code}"
-    finally:
-        reset_changes()
+    response = delete_cat(AUTH_ADMIN, "Sergey")
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 200
 
 
-def test_delete_cat_admin_invalid():
-    response = delete_cat(auth_admin, "Christmas")
-    try:
-        assert (
-            response.status_code == 400
-        ), f"Status code is wrong, expected 400, got {response.status_code}"
-        assert "Unknown kitty requested to be deleted" in response.text
-    finally:
-        reset_changes()
+def test_delete_non_existent_cat():
+    response = delete_cat(AUTH_ADMIN, "Christmas")
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 400
+    assert "Unknown kitty requested to be deleted" in response.text
 
 
-def test_delete_cat_user():
-    response = delete_cat(auth_user, "Harri")
-    try:
-        assert (
-            response.status_code == 400
-        ), f"Status code is wrong, expected 400, got {response.status_code}"
-    finally:
-        reset_changes()
+def test_delete_cat_by_user():
+    response = delete_cat(AUTH_USER, "Harri")
+    assert isinstance(response, requests.Response), CONNECTION_ERROR
+    assert response.status_code == 400
