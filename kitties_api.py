@@ -1,25 +1,47 @@
+from typing import Optional
+from urllib.parse import urljoin
+
 import requests
+from requests import Response, exceptions
 
-base_url = "http://localhost:3000/api"
-
-
-def login(login_data: dict[str]) -> requests.Response:
-    return requests.post(base_url + "/register", data=login_data)
+BASE_URL = "http://localhost:3000/api/"
 
 
-def kitties_data(auth_data: dict[str]) -> requests.Response:
-    return requests.get(base_url + "/kitties", headers=auth_data)
+def check_connection(function):
+    def wrapper(*args, **kwargs):
+        try:
+            fun = function(*args, **kwargs)
+        except exceptions.ConnectionError:
+            return None
+        return fun
+
+    return wrapper
 
 
-def rename_cat(auth_data: dict[str], old_name: str, new_name: dict[str]) -> requests.Response:
+@check_connection
+def login(login_data: dict[str, str]) -> Optional[Response]:
+    return requests.post(urljoin(BASE_URL, "register"), data=login_data)
+
+
+@check_connection
+def get_kitties_data(auth_data: dict[str, str]) -> Optional[Response]:
+    return requests.get(urljoin(BASE_URL, "kitties"), headers=auth_data)
+
+
+@check_connection
+def rename_cat(
+    auth_data: dict[str, str], old_name: str, new_name: dict[str, str]
+) -> Optional[Response]:
     return requests.put(
-        base_url + f"/kitties/{old_name}", headers=auth_data, data=new_name
+        urljoin(BASE_URL, f"kitties/{old_name}"), headers=auth_data, data=new_name
     )
 
 
-def delete_cat(auth_data: dict[str], name: str) -> requests.Response:
-    return requests.delete(base_url + f"/kitties/{name}", headers=auth_data)
+@check_connection
+def delete_cat(auth_data: dict[str, str], name: str) -> Optional[Response]:
+    return requests.delete(urljoin(BASE_URL, f"kitties/{name}"), headers=auth_data)
 
 
-def reset_changes() -> requests.Response:
-    return requests.get(base_url + "/reset")
+@check_connection
+def reset_changes() -> Optional[Response]:
+    return requests.get(urljoin(BASE_URL, "reset"))
