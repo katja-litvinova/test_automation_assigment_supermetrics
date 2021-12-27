@@ -1,4 +1,4 @@
-This is GUI and API tests for Supermetrics Kitty Manager.
+This is UI and API tests for Supermetrics Kitty Manager.
 
 
 # Running the test app
