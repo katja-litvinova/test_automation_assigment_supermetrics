@@ -25,9 +25,9 @@ To run it you should,
 
    API tests:
    ```bash
-    python -m pytest test_API.py 
+    python -m pytest tests/test_api.py 
     ```
-   GUI tests:
+   UI tests:
    ```bash
-     python -m pytest tests/test_functional.py
+     python -m pytest tests/test_ui.py
     ```

@@ -1,5 +1,5 @@
-from pages.base_page import BasePage
-from pages.locators import KittyPageLocators, CommonLocators, LoginPageLocators
+from testlib.base_page import BasePage
+from testlib.locators import KittyPageLocators, CommonLocators, LoginPageLocators
 
 CatInfo = dict[str, str]
 
@@ -30,17 +30,17 @@ class KittyPage(BasePage, KittyPageLocators):
     def get_whole_kitty_info(self) -> list[CatInfo]:
         self.wait_for_element_present(KittyPageLocators.ALL_CATS_INFO)
         cats = self.browser.find_elements(*KittyPageLocators.ALL_CATS_INFO)
-        actual_cats_information: list[CatInfo] = []
+        cats_information: list[CatInfo] = []
         for cat in cats:
             raw_text: list[str] = cat.text.split("\n")
             cleaned_text = clean_text(raw_text)
             name = cleaned_text.pop()
             cat_info = raw_cats_info_to_dict(cleaned_text)
             cat_info["Name"] = name
-            actual_cats_information.append(cat_info)
-        return actual_cats_information
+            cats_information.append(cat_info)
+        return cats_information
 
-    def get_awesomeness(self) -> list[str]:
+    def get_awesomeness_from_all_cats(self) -> list[str]:
         self.wait_for_element_present(KittyPageLocators.ALL_CATS_INFO)
         cats_awesomeness = self.browser.find_elements(
             *KittyPageLocators.CAT_AWESOMENESS
@@ -51,12 +51,12 @@ class KittyPage(BasePage, KittyPageLocators):
         self.wait_for_element_present(KittyPageLocators.ALL_CATS_INFO)
         return self.browser.find_element(*KittyPageLocators.CAT_NAME).text
 
-    def get_cat_names(self) -> list[str]:
+    def get_cats_names(self) -> list[str]:
         self.wait_for_element_present(KittyPageLocators.ALL_CATS_INFO)
         cats_name = self.browser.find_elements(*KittyPageLocators.CAT_NAME)
         return [name.text for name in cats_name]
 
-    def rename_cat_name(self, new_name: str) -> None:
+    def rename_first_cat(self, new_name: str) -> None:
         self.wait_for_element_present(KittyPageLocators.CAT_NAME)
         cat_name = self.browser.find_element(*KittyPageLocators.CAT_NAME)
         cat_name.click()
@@ -68,7 +68,7 @@ class KittyPage(BasePage, KittyPageLocators):
         save = self.browser.find_element(*KittyPageLocators.SAVE_BUTTON)
         save.click()
 
-    def delete_cat(self) -> None:
+    def delete_first_cat(self) -> None:
         self.wait_for_element_present(KittyPageLocators.DELETE_BUTTON)
         cat_del = self.browser.find_element(*KittyPageLocators.DELETE_BUTTON)
         cat_del.click()
